@@ -44,6 +44,10 @@ npm run preview             # production build in the Cloudflare runtime
 3. In Supabase → **Authentication → URL Configuration**, set the Site URL to the live address and add `https://<domain>/**` to the redirect URLs (needed for "forgot password" emails).
 4. When a custom domain is added, update `NEXT_PUBLIC_SITE_URL` in `wrangler.jsonc` and `.env.production`.
 
+## Sample data
+
+The new store came with sample content so it doesn't look empty: 36 products with code `DEMO-…`, two banners and category pictures, all using the drawings in `public/placeholders/` (marked «صورة توضيحية»). Admin → المنتجات has a button that deletes the sample products and banners in one go. Category pictures stay until replaced from Admin → الأقسام.
+
 ## Ads
 
 Ad links can carry `?utm_source=facebook&utm_campaign=<name>`; the source is saved on the order (Facebook clicks are detected automatically) and shown in the admin.

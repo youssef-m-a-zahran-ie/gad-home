@@ -6,6 +6,7 @@ import type { CategoryRow, ProductRow } from "@/lib/supabase/database.types";
 import { Empty, PageHead } from "@/components/admin/ui";
 import { ProductImage } from "@/store/components/product-image";
 import { categoryOptions } from "./options";
+import { ClearDemo } from "./clear-demo";
 
 export const metadata: Metadata = { title: "المنتجات" };
 
@@ -27,7 +28,11 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   if (cat === "none") query = query.is("category_id", null);
   else if (cat) query = query.eq("category_id", cat);
 
-  const [{ data }, { data: catsData }] = await Promise.all([query, supabase.from("categories").select("id, name, parent_id").order("sort").order("name")]);
+  const [{ data }, { data: catsData }, { count: demoCount }] = await Promise.all([
+    query,
+    supabase.from("categories").select("id, name, parent_id").order("sort").order("name"),
+    supabase.from("products").select("id", { count: "exact", head: true }).like("sku", "DEMO-%"),
+  ]);
   const cats = (catsData ?? []) as Pick<CategoryRow, "id" | "name" | "parent_id">[];
   const products = (data ?? []) as unknown as (ProductRow & { product_images: { path: string; sort: number }[] })[];
 
@@ -38,6 +43,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         sub={`${num(products.length)} منتج`}
         actions={<Link href="/admin/products/new" className="btn btn-primary">+ أضف منتج</Link>}
       />
+      {(demoCount ?? 0) > 0 && <ClearDemo count={demoCount ?? 0} />}
       {sp.deleted && <p className="mb-4 rounded-xl bg-ok-bg px-4 py-3 text-[18px] font-bold text-ok">المنتج اتمسح.</p>}
       <form className="mb-5 grid gap-2 sm:grid-cols-[1fr_260px_auto]" action="/admin/products">
         <input name="q" defaultValue={q} className="input" placeholder="ابحث باسم المنتج أو الكود" />

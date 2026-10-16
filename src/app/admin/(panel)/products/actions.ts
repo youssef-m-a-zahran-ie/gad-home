@@ -113,3 +113,14 @@ export async function toggleProductActive(id: string, active: boolean): Promise<
   refresh(id);
   return ok(active ? "المنتج ظاهر في الموقع." : "المنتج اتخفى من الموقع.");
 }
+
+/** Removes the sample products (code DEMO-…) and sample banners that came with the new store. */
+export async function clearDemoData(): Promise<ActionState> {
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("products").delete().like("sku", "DEMO-%");
+  if (error) return fail(friendlyDbError(error));
+  await supabase.from("banners").delete().like("image_path", "/placeholders/%");
+  refresh();
+  revalidatePath("/admin/settings");
+  return ok("المنتجات والبانرات التجريبية اتمسحت ✓");
+}

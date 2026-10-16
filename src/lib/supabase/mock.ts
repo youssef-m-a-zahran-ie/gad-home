@@ -10,10 +10,10 @@ type Row = Record<string, unknown>;
 
 const now = new Date().toISOString();
 const cats: Row[] = [
-  { id: "c1", parent_id: null, name: "رفايع المطبخ", slug: "kitchen-tools", image_path: null, sort: 1, is_active: true, show_on_home: true },
-  { id: "c2", parent_id: null, name: "الصواني", slug: "trays", image_path: null, sort: 2, is_active: true, show_on_home: true },
-  { id: "c3", parent_id: null, name: "أدوات التنظيف والغسيل", slug: "cleaning", image_path: null, sort: 3, is_active: true, show_on_home: true },
-  { id: "c4", parent_id: null, name: "أدوات المائدة", slug: "tableware", image_path: null, sort: 4, is_active: true, show_on_home: true },
+  { id: "c1", parent_id: null, name: "رفايع المطبخ", slug: "kitchen-tools", image_path: "/placeholders/c-kitchen-tools.webp", sort: 1, is_active: true, show_on_home: true },
+  { id: "c2", parent_id: null, name: "الصواني", slug: "trays", image_path: "/placeholders/c-trays.webp", sort: 2, is_active: true, show_on_home: true },
+  { id: "c3", parent_id: null, name: "أدوات التنظيف والغسيل", slug: "cleaning", image_path: "/placeholders/c-cleaning.webp", sort: 3, is_active: true, show_on_home: true },
+  { id: "c4", parent_id: null, name: "أدوات المائدة", slug: "tableware", image_path: "/placeholders/c-tableware.webp", sort: 4, is_active: true, show_on_home: true },
   { id: "c5", parent_id: "c2", name: "صواني ستانلس", slug: "steel-trays", image_path: null, sort: 1, is_active: true, show_on_home: false },
   { id: "c6", parent_id: "c2", name: "صواني بلاستيك", slug: "plastic-trays", image_path: null, sort: 2, is_active: true, show_on_home: false },
 ];
@@ -45,7 +45,7 @@ const products: Row[] = names.map(([name, price, cmp, stock], i) => ({
   sort: 0,
   created_at: now,
   updated_at: now,
-  product_images: [],
+  product_images: [1, 2].map((k) => ({ path: `/placeholders/p-${cats[i % 4].slug}-${((i + k) % 3) + 1}.webp`, sort: k })),
   categories: { name: cats[i % 4].name, slug: cats[i % 4].slug },
 }));
 const govs: Row[] = [
@@ -86,7 +86,10 @@ const tables: Record<string, Row[]> = {
   orders,
   order_items: items,
   settings: [settings],
-  banners: [],
+  banners: ["offers", "shipping"].map((k, i) => ({
+    id: `b${i}`, image_path: `/placeholders/banner-${k}.webp`, mobile_image_path: `/placeholders/banner-${k}-m.webp`,
+    link: "/offers", title: null, sort: i, is_active: true, created_at: now,
+  })),
   admins: [{ email: "admin@example.com", created_at: now }],
   stock_movements: [
     { id: 1, product_id: "p1", change: -2, reason: "order", order_id: "o1", note: null, created_by: null, created_at: now, products: { name: "مقشرة خضار ستانلس" } },
@@ -111,6 +114,7 @@ function builder(table: string) {
     eq: (col: string, v: unknown) => chain((r) => r.filter((x) => !(col in x) || x[col] === v))(),
     in: (col: string, v: unknown[]) => chain((r) => r.filter((x) => !(col in x) || v.includes(x[col])))(),
     ilike: chain(),
+    like: chain(),
     neq: chain(),
     is: chain(),
     or: chain(),
