@@ -1,0 +1,22 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": ".open-next/worker.js",
+	"name": "gad-home",
+	"compatibility_date": "2026-09-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "gad-home"
+		}
+	],
+	"vars": {
+		"NEXT_PUBLIC_SUPABASE_URL": "https://ocsqswnttstxhhmidntj.supabase.co",
+		"NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable__GbM_j8a5hZZjFA8Vvpsfg_3m-j5YC1",
+		"NEXT_PUBLIC_SITE_URL": "https://gad-home.youssef-m-a-zahran.workers.dev"
+	}
+}
