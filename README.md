@@ -3,7 +3,7 @@
 متجر أدوات منزلية أونلاين + لوحة تحكم، على نفس الدومين. Online store for household goods, with its admin at `/admin`.
 
 - **Stack:** Next.js 16 (App Router) · Supabase (database, auth, photos) · Cloudflare Workers via OpenNext
-- **Design:** Arabic only, right-to-left, blue theme, Cairo font, big text and buttons, no animations. Built for shoppers who aren't used to apps.
+- **Design:** Arabic only, right-to-left, blue theme, Noto Naskh Arabic font, big text and buttons, no animations. Built for shoppers who aren't used to apps.
 
 ## What's in it
 

@@ -37,7 +37,7 @@
   --color-ok-bg: var(--ok-bg);
   --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
-  --font-sans: "Cairo Variable", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-sans: "Noto Naskh Arabic Variable", "Noto Serif Variable", "Segoe UI", Tahoma, serif;
 }
 
 html {
