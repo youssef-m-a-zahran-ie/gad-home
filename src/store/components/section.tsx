@@ -6,11 +6,14 @@ export function Section({ title, href, children, tone = "white" }: { title: stri
   return (
     <section className={tone === "soft" ? "bg-soft py-8 sm:py-10" : "py-8 sm:py-10"}>
       <div className="container-page">
-        <div className="mb-5 flex items-end justify-between gap-3">
-          <h2 className="text-[26px] sm:text-[30px]">{title}</h2>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="text-[23px] text-ink sm:text-[30px]">{title}</h2>
           {href && (
-            <Link href={href} className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-xl px-3 text-[17px] font-bold text-blue hover:bg-sky">
-              مشاهدة الكل <ChevronLeft size={20} />
+            <Link
+              href={href}
+              className="inline-flex min-h-[44px] shrink-0 items-center gap-1 text-[17px] font-bold text-ink underline decoration-2 underline-offset-8 hover:text-blue"
+            >
+              عرض كل المنتجات <ChevronLeft size={20} />
             </Link>
           )}
         </div>

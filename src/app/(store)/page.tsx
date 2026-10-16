@@ -1,17 +1,29 @@
 import Link from "next/link";
 import { getBanners, getCategories, getSettings, listProducts, topCategories, withDescendants } from "@/store/data";
 import { BannerSlider } from "@/store/components/banner-slider";
-import { CategoryTiles } from "@/store/components/category-tiles";
-import { ProductGrid } from "@/store/components/product-card";
+import { CategoryPromo, CategoryStrip } from "@/store/components/category-tiles";
+import { ProductCard, ProductGrid } from "@/store/components/product-card";
 import { Section } from "@/store/components/section";
 import { TrustBadges } from "@/store/components/trust-badges";
-import type { StoreProduct } from "@/store/data";
+import type { Category, StoreProduct } from "@/store/data";
 
 /** Four on phones (two rows), eight on bigger screens. */
 function HomeGrid({ products }: { products: StoreProduct[] }) {
   return (
     <div className="[&>div>*:nth-child(n+5)]:hidden md:[&>div>*:nth-child(n+5)]:block">
       <ProductGrid products={products.slice(0, 8)} />
+    </div>
+  );
+}
+
+/** The category's picture card first, then its products: three more on phones, seven on bigger screens. */
+function CategoryShelf({ c, products }: { c: Category; products: StoreProduct[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 [&>*:nth-child(n+5)]:hidden md:[&>*:nth-child(n+5)]:block">
+      <CategoryPromo c={c} />
+      {products.slice(0, 7).map((p) => (
+        <ProductCard key={p.id} p={p} />
+      ))}
     </div>
   );
 }
@@ -28,12 +40,12 @@ export default async function HomePage() {
   const tops = topCategories(cats);
   const homeCats = tops.filter((c) => c.show_on_home).slice(0, 6);
   const perCat = await Promise.all(
-    homeCats.map(async (c) => ({ c, products: await listProducts({ categoryIds: withDescendants(cats, c.id), limit: 8 }) })),
+    homeCats.map(async (c) => ({ c, products: await listProducts({ categoryIds: withDescendants(cats, c.id), limit: 7 }) })),
   );
 
   return (
-    <>
-      <div className="container-page pt-4">
+    <div className="-mb-12 bg-soft pb-4">
+      <div className="container-page py-5 sm:py-6">
         {banners.length > 0 ? (
           <BannerSlider banners={banners} />
         ) : (
@@ -54,14 +66,13 @@ export default async function HomePage() {
         )}
       </div>
 
-      <div className="container-page pt-6">
-        <TrustBadges deliveryDays={settings.delivery_days} returnDays={settings.return_days} />
-      </div>
-
       {tops.length > 0 && (
-        <Section title="تسوق حسب الأقسام" href="/categories">
-          <CategoryTiles cats={tops.slice(0, 12)} />
-        </Section>
+        <nav aria-label="الأقسام" className="bg-white py-5 sm:py-6">
+          <div className="container-page">
+            <h2 className="sr-only">الأقسام</h2>
+            <CategoryStrip cats={tops.slice(0, 16)} />
+          </div>
+        </nav>
       )}
 
       {offers.length > 0 && (
@@ -71,7 +82,7 @@ export default async function HomePage() {
       )}
 
       {best.length > 0 && (
-        <Section title="الأكثر مبيعاً" href="/best-sellers">
+        <Section title="الأكثر مبيعاً" href="/best-sellers" tone="soft">
           <HomeGrid products={best} />
         </Section>
       )}
@@ -84,11 +95,15 @@ export default async function HomePage() {
 
       {perCat
         .filter((x) => x.products.length > 0)
-        .map(({ c, products }, i) => (
-          <Section key={c.id} title={c.name} href={`/category/${encodeURIComponent(c.slug)}`} tone={i % 2 ? "soft" : "white"}>
-            <HomeGrid products={products} />
+        .map(({ c, products }) => (
+          <Section key={c.id} title={`تسوق ${c.name}`} href={`/category/${encodeURIComponent(c.slug)}`} tone="soft">
+            <CategoryShelf c={c} products={products} />
           </Section>
         ))}
-    </>
+
+      <Section title={`ليه تشتري من ${settings.store_name}؟`} tone="soft">
+        <TrustBadges variant="cards" deliveryDays={settings.delivery_days} returnDays={settings.return_days} />
+      </Section>
+    </div>
   );
 }

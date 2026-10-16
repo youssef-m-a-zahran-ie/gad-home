@@ -15,9 +15,9 @@ export function ProductCard({ p, eager = false }: { p: StoreProduct; eager?: boo
   const href = `/product/${encodeURIComponent(p.slug)}`;
 
   return (
-    <article className="card flex h-full flex-col overflow-hidden">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-line/70 bg-white">
       <Link href={href} className="relative block">
-        <ProductImage path={p.images[0]} alt={p.name} eager={eager} className="aspect-square w-full p-2" />
+        <ProductImage path={p.images[0]} alt={p.name} eager={eager} className="aspect-square w-full" />
         <div className="absolute inset-x-2 top-2 flex flex-wrap justify-between gap-1">
           {pct ? <span className="badge bg-sale text-white">خصم {pct}%</span> : <span />}
           {soldOut ? (
@@ -30,7 +30,7 @@ export function ProductCard({ p, eager = false }: { p: StoreProduct; eager?: boo
         </div>
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
-        <Link href={href} className="line-clamp-2 min-h-[2.75em] text-[17px] leading-snug font-bold text-ink hover:text-blue sm:text-[18px]">
+        <Link href={href} className="line-clamp-2 min-h-[2.75em] text-[17px] leading-snug font-semibold text-ink hover:text-blue sm:text-[18px]">
           {p.name}
         </Link>
         <div className="mt-auto">

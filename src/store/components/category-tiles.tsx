@@ -31,6 +31,63 @@ export function CategoryTiles({ cats }: { cats: Category[] }) {
   );
 }
 
+/** Home page strip: round picture with the name under it. All of them show, they wrap onto more rows. */
+export function CategoryStrip({ cats }: { cats: Category[] }) {
+  return (
+    <ul className="flex flex-wrap justify-center gap-y-4">
+      {cats.map((c) => {
+        const src = mediaUrl(c.image_path);
+        return (
+          <li key={c.id} className="w-1/3 px-1 sm:w-1/4 md:w-1/6 lg:w-[12.5%]">
+            <Link
+              href={`/category/${encodeURIComponent(c.slug)}`}
+              className="flex h-full flex-col items-center gap-2 rounded-2xl p-2 text-center hover:bg-soft"
+            >
+              <span className="grid size-[88px] place-items-center overflow-hidden rounded-full bg-sky sm:size-24">
+                {src ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={src} alt="" loading="lazy" className="size-full object-cover" />
+                ) : (
+                  <BoxIcon size={40} strokeWidth={1.4} className="text-navy/50" />
+                )}
+              </span>
+              <span className="text-[17px] leading-snug font-bold text-ink">{c.name}</span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Tall picture card that opens a category; sits first in that category's row of products. */
+export function CategoryPromo({ c }: { c: Category }) {
+  const src = mediaUrl(c.image_path);
+  return (
+    <Link
+      href={`/category/${encodeURIComponent(c.slug)}`}
+      className="flex h-full flex-col overflow-hidden rounded-2xl bg-navy text-center text-white hover:bg-navy-2"
+    >
+      <span className="grid justify-items-center gap-3 px-3 pt-5 pb-4">
+        <span className="text-[20px] leading-snug font-extrabold sm:text-[26px]">
+          {c.name}
+          <br />
+          في مكان واحد
+        </span>
+        <span className="rounded-full bg-white px-4 py-1.5 text-[17px] font-bold text-navy">اشتري دلوقتي</span>
+      </span>
+      <span className="mt-auto grid aspect-[4/3] place-items-center overflow-hidden bg-navy-2">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt="" loading="lazy" className="size-full object-cover" />
+        ) : (
+          <BoxIcon size={56} strokeWidth={1.4} className="text-white/50" />
+        )}
+      </span>
+    </Link>
+  );
+}
+
 /** Row of sub-category buttons on a category page. */
 export function SubCategoryChips({ cats, activeSlug }: { cats: Category[]; activeSlug?: string }) {
   if (!cats.length) return null;

@@ -29,46 +29,36 @@ export async function StoreShell({ children }: { children: ReactNode }) {
         <div className="bg-navy px-4 py-2 text-center text-[16px] font-bold text-white sm:text-[17px]">{settings.announcement}</div>
       )}
 
-      <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
-        <div className="container-page flex items-center gap-2 py-2.5 sm:gap-4">
+      <header className="sticky top-0 z-40 border-b border-line bg-white">
+        <div className="container-page flex items-center gap-2 py-3 sm:gap-4 lg:py-4">
           <MobileMenu tops={tops} all={cats} />
           <Logo name={settings.store_name} logoPath={settings.logo_path} />
           <div className="hidden flex-1 md:block">
-            <SearchBox className="mx-auto max-w-2xl" />
+            <SearchBox className="mx-auto max-w-[620px]" />
           </div>
-          <div className="ms-auto flex items-center gap-2 md:ms-0">
+          <div className="ms-auto flex items-center gap-1 md:ms-0">
             {settings.phone && (
-              <a href={`tel:${settings.phone}`} className="hidden items-center gap-2 rounded-2xl px-3 py-2 font-bold text-navy hover:bg-sky xl:inline-flex" dir="ltr">
-                <PhoneIcon size={22} />
-                {settings.phone}
+              <a href={`tel:${settings.phone}`} className="hidden min-h-[52px] items-center gap-2 rounded-full px-3 font-bold text-ink hover:bg-soft xl:inline-flex">
+                <PhoneIcon size={24} />
+                <span dir="ltr">{settings.phone}</span>
               </a>
             )}
             <CartButton />
           </div>
         </div>
-        <div className="container-page pb-2.5 md:hidden">
+        <div className="container-page pb-3 md:hidden">
           <SearchBox />
         </div>
-        <nav aria-label="الأقسام" className="hidden border-t border-line lg:block">
-          <ul className="container-page flex flex-wrap items-center gap-x-1 py-1">
+        <nav aria-label="الأقسام" className="hidden lg:block">
+          <ul className="container-page flex flex-wrap items-center gap-x-6 pb-2">
             <li>
-              <Link href="/offers" className="inline-flex min-h-[48px] items-center rounded-xl px-3 text-[18px] font-extrabold text-sale hover:bg-sky">
+              <Link href="/offers" className="inline-flex min-h-[48px] items-center text-[18px] font-extrabold text-sale hover:underline hover:underline-offset-8">
                 العروض
-              </Link>
-            </li>
-            <li>
-              <Link href="/best-sellers" className="inline-flex min-h-[48px] items-center rounded-xl px-3 text-[18px] font-bold text-navy hover:bg-sky">
-                الأكثر مبيعاً
-              </Link>
-            </li>
-            <li>
-              <Link href="/new" className="inline-flex min-h-[48px] items-center rounded-xl px-3 text-[18px] font-bold text-navy hover:bg-sky">
-                وصل حديثاً
               </Link>
             </li>
             {tops.map((c) => (
               <li key={c.id}>
-                <Link href={`/category/${encodeURIComponent(c.slug)}`} className="inline-flex min-h-[48px] items-center rounded-xl px-3 text-[18px] font-bold text-ink hover:bg-sky hover:text-navy">
+                <Link href={`/category/${encodeURIComponent(c.slug)}`} className="inline-flex min-h-[48px] items-center text-[18px] font-bold text-ink hover:text-blue">
                   {c.name}
                 </Link>
               </li>
@@ -81,7 +71,7 @@ export async function StoreShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <footer className="no-print mt-12 bg-navy pb-24 text-white lg:pb-0">
+      <footer className="no-print mt-12 bg-navy-2 pb-24 text-white lg:pb-0">
         <div className="container-page grid gap-8 py-10 md:grid-cols-3">
           <div className="grid content-start gap-3">
             <Logo name={settings.store_name} logoPath={settings.logo_path} light />
@@ -110,10 +100,18 @@ export async function StoreShell({ children }: { children: ReactNode }) {
                   <PhoneIcon size={22} /> <span dir="ltr">{settings.phone}</span>
                 </a>
               )}
-              <div className="flex flex-wrap gap-3 text-[16px] text-white/85">
-                {settings.facebook && <a href={settings.facebook} target="_blank" rel="noopener" className="underline">فيسبوك</a>}
-                {settings.instagram && <a href={settings.instagram} target="_blank" rel="noopener" className="underline">إنستجرام</a>}
-                {settings.tiktok && <a href={settings.tiktok} target="_blank" rel="noopener" className="underline">تيك توك</a>}
+              <div className="flex flex-wrap gap-2 text-[17px] font-bold">
+                {[
+                  { href: settings.facebook, label: "فيسبوك" },
+                  { href: settings.instagram, label: "إنستجرام" },
+                  { href: settings.tiktok, label: "تيك توك" },
+                ]
+                  .filter((s) => s.href)
+                  .map((s) => (
+                    <a key={s.label} href={s.href!} target="_blank" rel="noopener" className="inline-flex min-h-[44px] items-center rounded-full border-2 border-white/40 px-4 hover:bg-white/10">
+                      {s.label}
+                    </a>
+                  ))}
               </div>
             </div>
           </div>
