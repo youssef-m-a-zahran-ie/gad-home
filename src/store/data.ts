@@ -1,8 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { connection } from "next/server";
-import { createPublicClient } from "@/lib/supabase/server";
-import type { BannerRow, CategoryRow, GovernorateRow, SettingsRow } from "@/lib/supabase/database.types";
+import { one, query } from "@/lib/db";
+import type { BannerRow, CategoryRow, GovernorateRow, SettingsRow } from "@/lib/types";
 
 export type StoreProduct = {
   id: string;
@@ -26,14 +26,15 @@ export type StoreProductFull = StoreProduct & {
 
 export type Category = Pick<CategoryRow, "id" | "parent_id" | "name" | "slug" | "image_path" | "sort" | "show_on_home">;
 
-const CARD_COLS =
-  "id, slug, name, price, compare_at_price, stock, is_best_seller, is_trending, category_id, created_at, sort, product_images(path, sort)";
-
 type RawCard = {
   id: string; slug: string; name: string; price: number; compare_at_price: number | null; stock: number;
   is_best_seller: boolean; is_trending: boolean; category_id: string | null; created_at: string; sort: number;
-  product_images: { path: string; sort: number }[] | null;
+  images: string[] | null;
 };
+
+const CARD_SQL = `p.id, p.slug, p.name, p.price, p.compare_at_price, p.stock, p.is_best_seller, p.is_trending,
+  p.category_id, p.created_at, p.sort,
+  coalesce((select array_agg(i.path order by i.sort) from product_images i where i.product_id = p.id), '{}') as images`;
 
 function toCard(p: RawCard): StoreProduct {
   return {
@@ -47,14 +48,13 @@ function toCard(p: RawCard): StoreProduct {
     is_trending: p.is_trending,
     category_id: p.category_id,
     created_at: p.created_at,
-    images: [...(p.product_images ?? [])].sort((a, b) => a.sort - b.sort).map((i) => i.path),
+    images: p.images ?? [],
   };
 }
 
-/** Every store read goes through here: marks the page dynamic so prices and stock are always fresh. */
-async function db() {
+/** Every store read calls this first: marks the page dynamic so prices and stock are always fresh. */
+async function live() {
   await connection();
-  return createPublicClient();
 }
 
 const DEFAULT_SETTINGS: SettingsRow = {
@@ -64,32 +64,25 @@ const DEFAULT_SETTINGS: SettingsRow = {
 };
 
 export const getSettings = cache(async (): Promise<SettingsRow> => {
-  const supabase = await db();
-  const { data } = await supabase.from("settings").select("*").eq("id", 1).maybeSingle();
-  return (data as SettingsRow | null) ?? DEFAULT_SETTINGS;
+  await live();
+  return (await one<SettingsRow>("select * from settings where id = 1")) ?? DEFAULT_SETTINGS;
 });
 
 export const getCategories = cache(async (): Promise<Category[]> => {
-  const supabase = await db();
-  const { data } = await supabase
-    .from("categories")
-    .select("id, parent_id, name, slug, image_path, sort, show_on_home")
-    .eq("is_active", true)
-    .order("sort")
-    .order("name");
-  return (data ?? []) as Category[];
+  await live();
+  return query<Category>(
+    "select id, parent_id, name, slug, image_path, sort, show_on_home from categories where is_active order by sort, name",
+  );
 });
 
 export const getBanners = cache(async (): Promise<BannerRow[]> => {
-  const supabase = await db();
-  const { data } = await supabase.from("banners").select("*").eq("is_active", true).order("sort");
-  return (data ?? []) as BannerRow[];
+  await live();
+  return query<BannerRow>("select * from banners where is_active order by sort");
 });
 
 export const getGovernorates = cache(async (): Promise<GovernorateRow[]> => {
-  const supabase = await db();
-  const { data } = await supabase.from("governorates").select("*").eq("is_active", true).order("sort");
-  return (data ?? []) as GovernorateRow[];
+  await live();
+  return query<GovernorateRow>("select * from governorates where is_active order by sort");
 });
 
 export type ProductFilter = {
@@ -102,40 +95,44 @@ export type ProductFilter = {
 };
 
 export async function listProducts(f: ProductFilter = {}): Promise<StoreProduct[]> {
-  const supabase = await db();
-  let q = supabase.from("products").select(CARD_COLS).eq("is_active", true);
-  if (f.categoryIds?.length) q = q.in("category_id", f.categoryIds);
-  if (f.kind === "best") q = q.eq("is_best_seller", true);
-  if (f.kind === "trending") q = q.eq("is_trending", true);
-  if (f.kind === "offers") q = q.not("compare_at_price", "is", null);
-  if (f.excludeId) q = q.neq("id", f.excludeId);
+  await live();
+  const where = ["p.is_active"];
+  const args: unknown[] = [];
+  const arg = (v: unknown) => `$${args.push(v)}`;
+  if (f.categoryIds?.length) where.push(`p.category_id = any(${arg(f.categoryIds)}::uuid[])`);
+  if (f.kind === "best") where.push("p.is_best_seller");
+  if (f.kind === "trending") where.push("p.is_trending");
+  if (f.kind === "offers") where.push("p.compare_at_price is not null and p.compare_at_price > p.price");
+  if (f.excludeId) where.push(`p.id <> ${arg(f.excludeId)}::uuid`);
   if (f.q) {
-    const term = f.q.replace(/[%_,()*]/g, " ").trim().slice(0, 60);
-    if (term) q = q.or(`name.ilike.%${term}%,description.ilike.%${term}%,sku.ilike.%${term}%`);
+    const term = f.q.replace(/[%_\\]/g, " ").trim().slice(0, 60);
+    if (term) {
+      const t = arg(`%${term}%`);
+      where.push(`(p.name ilike ${t} or p.description ilike ${t} or p.sku ilike ${t})`);
+    }
   }
   const sort = f.sort ?? (f.kind === "new" ? "new" : "default");
-  if (sort === "price-asc") q = q.order("price", { ascending: true });
-  else if (sort === "price-desc") q = q.order("price", { ascending: false });
-  else if (sort === "new") q = q.order("created_at", { ascending: false });
-  else q = q.order("sort", { ascending: true }).order("created_at", { ascending: false });
-  q = q.limit(f.limit ?? 200);
-  const { data } = await q;
-  let rows = ((data ?? []) as unknown as RawCard[]).map(toCard);
-  if (f.kind === "offers") rows = rows.filter((p) => p.compare_at_price != null && p.compare_at_price > p.price);
+  const order =
+    sort === "price-asc" ? "p.price asc"
+    : sort === "price-desc" ? "p.price desc"
+    : sort === "new" ? "p.created_at desc"
+    : "p.sort asc, p.created_at desc";
+  const limit = Math.max(1, Math.min(500, Math.round(f.limit ?? 200)));
+  const rows = await query<RawCard>(
+    `select ${CARD_SQL} from products p where ${where.join(" and ")} order by ${order} limit ${limit}`,
+    args,
+  );
   // In stock first, so shoppers see what they can buy.
-  return rows.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
+  return rows.map(toCard).sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
 }
 
 export const getProduct = cache(async (slug: string): Promise<StoreProductFull | null> => {
-  const supabase = await db();
-  const { data } = await supabase
-    .from("products")
-    .select(`${CARD_COLS}, description, sku, low_stock_at`)
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!data) return null;
-  const raw = data as unknown as RawCard & { description: string | null; sku: string | null; low_stock_at: number };
+  await live();
+  const raw = await one<RawCard & { description: string | null; sku: string | null; low_stock_at: number }>(
+    `select ${CARD_SQL}, p.description, p.sku, p.low_stock_at from products p where p.slug = $1 and p.is_active`,
+    [slug],
+  );
+  if (!raw) return null;
   return { ...toCard(raw), description: raw.description, sku: raw.sku, low_stock_at: raw.low_stock_at };
 });
 
@@ -157,10 +154,10 @@ export type Receipt = {
 };
 
 export async function getReceipt(id: string): Promise<Receipt | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(id) && id !== "o1") return null;
-  const supabase = await db();
-  const { data } = await supabase.rpc("order_receipt", { p_id: id });
-  return (data as Receipt | null) ?? null;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  await live();
+  const row = await one<{ r: Receipt | null }>("select order_receipt($1::uuid) as r", [id]);
+  return row?.r ?? null;
 }
 
 /** Category tree helpers */

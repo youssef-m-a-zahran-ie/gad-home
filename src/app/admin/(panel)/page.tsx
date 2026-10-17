@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { query } from "@/lib/db";
 import { dateTime, egp, num } from "@/lib/format";
-import type { OrderRow } from "@/lib/supabase/database.types";
+import type { OrderRow } from "@/lib/types";
 import { Card, Empty, StatusBadge } from "@/components/admin/ui";
 
 export const metadata: Metadata = { title: "الرئيسية" };
@@ -20,19 +21,26 @@ function cairoStart(daysAgo = 0, monthStart = false) {
 }
 
 export default async function Dashboard() {
-  const { supabase } = await requireAdmin();
+  await requireAdmin();
   const monthStart = cairoStart(0, true);
   const todayStart = cairoStart(0);
-  const [{ data: monthOrders }, { data: latest }, { data: prods }] = await Promise.all([
-    supabase.from("orders").select("total, status, created_at").gte("created_at", monthStart).limit(5000),
-    supabase.from("orders").select("id, number, status, customer_name, total, created_at, governorate").order("created_at", { ascending: false }).limit(8),
-    supabase.from("products").select("id, name, stock, low_stock_at, is_active").eq("is_active", true).order("stock").limit(1000),
+  const [monthOrders, latest, prods] = await Promise.all([
+    query<{ total: number; status: string; created_at: string }>(
+      "select total, status, created_at from orders where created_at >= $1 limit 5000",
+      [monthStart],
+    ),
+    query<Pick<OrderRow, "id" | "number" | "status" | "customer_name" | "total" | "created_at" | "governorate">>(
+      "select id, number, status, customer_name, total, created_at, governorate from orders order by created_at desc limit 8",
+    ),
+    query<{ id: string; name: string; stock: number; low_stock_at: number }>(
+      "select id, name, stock, low_stock_at from products where is_active order by stock limit 1000",
+    ),
   ]);
-  const live = (monthOrders ?? []).filter((o) => o.status !== "cancelled");
+  const live = monthOrders.filter((o) => o.status !== "cancelled");
   const today = live.filter((o) => o.created_at >= todayStart);
   const sum = (a: { total: number }[]) => a.reduce((s, o) => s + Number(o.total), 0);
-  const newCount = (monthOrders ?? []).filter((o) => o.status === "new").length;
-  const low = (prods ?? []).filter((p) => p.stock <= p.low_stock_at);
+  const newCount = monthOrders.filter((o) => o.status === "new").length;
+  const low = prods.filter((p) => p.stock <= p.low_stock_at);
 
   return (
     <div className="grid gap-6">
@@ -58,11 +66,11 @@ export default async function Dashboard() {
             <h2 className="text-[22px]">آخر الطلبات</h2>
             <Link href="/admin/orders" className="text-[17px] font-bold text-blue hover:underline">كل الطلبات</Link>
           </div>
-          {(latest ?? []).length === 0 ? (
+          {latest.length === 0 ? (
             <Empty text="لسه مفيش طلبات. أول ما حد يطلب هيظهر هنا." />
           ) : (
             <ul className="grid gap-2">
-              {(latest as Pick<OrderRow, "id" | "number" | "status" | "customer_name" | "total" | "created_at" | "governorate">[]).map((o) => (
+              {latest.map((o) => (
                 <li key={o.id}>
                   <Link href={`/admin/orders/${o.id}`} className="flex flex-wrap items-center gap-3 rounded-xl border border-line p-3 hover:border-blue">
                     <span className="text-[19px] font-extrabold text-navy">#{o.number}</span>

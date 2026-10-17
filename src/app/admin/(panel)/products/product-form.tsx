@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ActionForm, Field, SubmitButton, Toggle } from "@/components/admin/form-bits";
 import { ImagePicker } from "@/components/admin/image-picker";
-import type { ProductRow } from "@/lib/supabase/database.types";
+import type { ProductRow } from "@/lib/types";
 import { categoryOptions, type CatOption } from "./options";
 import { deleteProduct, saveProduct } from "./actions";
 

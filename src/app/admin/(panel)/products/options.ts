@@ -1,4 +1,4 @@
-import type { CategoryRow } from "@/lib/supabase/database.types";
+import type { CategoryRow } from "@/lib/types";
 
 export type CatOption = Pick<CategoryRow, "id" | "name" | "parent_id">;
 

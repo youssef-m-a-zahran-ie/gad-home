@@ -1,22 +1,4 @@
-// Generated from the Supabase schema (project home-store), then compacted by hand:
-// Insert = required columns + optional rest, Update = Partial<Row>.
-// Regenerate after schema changes.
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
-type Rel<Fk extends string, Col extends string, Ref extends string> = {
-  foreignKeyName: Fk;
-  columns: [Col];
-  isOneToOne: false;
-  referencedRelation: Ref;
-  referencedColumns: ["id"];
-};
-type T<Row, Req extends keyof Row, R extends Rel<string, string, string>[] = []> = {
-  Row: Row;
-  Insert: Pick<Row, Req> & Partial<Omit<Row, Req>>;
-  Update: Partial<Row>;
-  Relationships: R;
-};
-
+// Row shapes of the Neon schema (see db/migrations). Update by hand when the schema changes.
 export type OrderStatus = "new" | "confirmed" | "shipped" | "delivered" | "cancelled";
 export type PaymentMethod = "cod" | "instapay";
 
@@ -59,30 +41,3 @@ export type StockMovementRow = {
   order_id: string | null; product_id: string; reason: string;
 };
 
-export type Database = {
-  __InternalSupabase: { PostgrestVersion: "14.18" };
-  public: {
-    Tables: {
-      admins: T<AdminRow, "email">;
-      banners: T<BannerRow, "image_path">;
-      categories: T<CategoryRow, "name" | "slug", [Rel<"categories_parent_id_fkey", "parent_id", "categories">]>;
-      governorates: T<GovernorateRow, "name">;
-      order_items: T<OrderItemRow, "line_total" | "name" | "order_id" | "price" | "qty", [Rel<"order_items_order_id_fkey", "order_id", "orders">, Rel<"order_items_product_id_fkey", "product_id", "products">]>;
-      orders: T<OrderRow, "address" | "city" | "customer_name" | "governorate" | "phone" | "shipping" | "subtotal" | "total", [Rel<"orders_governorate_id_fkey", "governorate_id", "governorates">]>;
-      product_images: T<ProductImageRow, "path" | "product_id", [Rel<"product_images_product_id_fkey", "product_id", "products">]>;
-      products: T<ProductRow, "name" | "price" | "slug", [Rel<"products_category_id_fkey", "category_id", "categories">]>;
-      settings: T<SettingsRow, never>;
-      stock_movements: T<StockMovementRow, "change" | "product_id" | "reason", [Rel<"stock_movements_product_id_fkey", "product_id", "products">]>;
-    };
-    Views: { [_ in never]: never };
-    Functions: {
-      is_admin: { Args: never; Returns: boolean };
-      is_admin_email: { Args: { p_email: string }; Returns: boolean };
-      order_receipt: { Args: { p_id: string }; Returns: Json };
-      place_order: { Args: { p_customer: Json; p_ip?: string; p_items: Json }; Returns: Json };
-      set_stock: { Args: { p_note?: string; p_product: string; p_stock: number }; Returns: number };
-    };
-    Enums: { order_status: OrderStatus; payment_method: PaymentMethod };
-    CompositeTypes: { [_ in never]: never };
-  };
-};

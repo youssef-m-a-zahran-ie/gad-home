@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { one } from "@/lib/db";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { signOut } from "../login/actions";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  const { user, supabase } = await requireAdmin();
-  const { count } = await supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "new");
+  const { user } = await requireAdmin();
+  const count = (await one<{ n: number }>("select count(*)::int as n from orders where status = 'new'"))?.n ?? 0;
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[250px_1fr]">
       <aside className="no-print border-b border-line bg-white px-4 py-3 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-l lg:py-6">
@@ -19,7 +20,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             </Link>
           </div>
         </div>
-        <AdminNav newOrders={count ?? 0} />
+        <AdminNav newOrders={count} />
         <div className="mt-6 hidden border-t border-line pt-4 lg:block">
           <p className="truncate text-[15px] text-muted" dir="ltr">{user.email}</p>
           <form action={signOut}>

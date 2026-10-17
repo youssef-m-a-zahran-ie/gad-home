@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { query } from "@/lib/db";
 import { egp, num } from "@/lib/format";
 import { Empty, PageHead } from "@/components/admin/ui";
 import { InventoryRow } from "./row";
@@ -14,22 +15,18 @@ const TABS = [
 ];
 
 export default async function InventoryPage({ searchParams }: PageProps<"/admin/inventory">) {
-  const { supabase } = await requireAdmin();
+  await requireAdmin();
   const sp = await searchParams;
   const tab = typeof sp.f === "string" ? sp.f : "all";
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
-  let query = supabase
-    .from("products")
-    .select("id, name, stock, low_stock_at, is_active, cost, price, product_images(path, sort)")
-    .order("stock", { ascending: true })
-    .order("name")
-    .limit(1000);
-  if (q) query = query.ilike("name", `%${q.replace(/[%_,()*]/g, " ")}%`);
-  const { data } = await query;
-  const all = (data ?? []) as unknown as {
-    id: string; name: string; stock: number; low_stock_at: number; is_active: boolean; cost: number | null; price: number;
-    product_images: { path: string; sort: number }[];
-  }[];
+  const all = await query<{
+    id: string; name: string; stock: number; low_stock_at: number; is_active: boolean; cost: number | null; price: number; image: string | null;
+  }>(
+    `select p.id, p.name, p.stock, p.low_stock_at, p.is_active, p.cost, p.price,
+       (select i.path from product_images i where i.product_id = p.id order by i.sort limit 1) as image
+     from products p ${q ? "where p.name ilike $1" : ""} order by p.stock asc, p.name limit 1000`,
+    q ? [`%${q.replace(/[%_\\]/g, " ")}%`] : [],
+  );
   const out = all.filter((p) => p.stock <= 0);
   const low = all.filter((p) => p.stock > 0 && p.stock <= p.low_stock_at);
   const rows = tab === "out" ? out : tab === "low" ? low : all;
@@ -74,7 +71,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
                 stock: p.stock,
                 low: p.low_stock_at,
                 active: p.is_active,
-                image: [...p.product_images].sort((a, b) => a.sort - b.sort)[0]?.path ?? null,
+                image: p.image,
               }}
             />
           ))}

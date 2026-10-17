@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
-import type { GovernorateRow } from "@/lib/supabase/database.types";
+import { one, query } from "@/lib/db";
+import type { GovernorateRow } from "@/lib/types";
 import { ActionForm, SubmitButton } from "@/components/admin/form-bits";
 import { PageHead } from "@/components/admin/ui";
 import { saveShipping } from "./actions";
@@ -9,12 +10,11 @@ import { saveShipping } from "./actions";
 export const metadata: Metadata = { title: "الشحن" };
 
 export default async function ShippingPage() {
-  const { supabase } = await requireAdmin();
-  const [{ data }, { data: s }] = await Promise.all([
-    supabase.from("governorates").select("*").order("sort"),
-    supabase.from("settings").select("free_shipping_over").eq("id", 1).maybeSingle(),
+  await requireAdmin();
+  const [govs, s] = await Promise.all([
+    query<GovernorateRow>("select * from governorates order by sort"),
+    one<{ free_shipping_over: number | null }>("select free_shipping_over from settings where id = 1"),
   ]);
-  const govs = (data ?? []) as GovernorateRow[];
   return (
     <>
       <PageHead

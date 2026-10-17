@@ -1,4 +1,4 @@
-import { mediaUrl } from "@/lib/supabase/env";
+import { mediaUrl } from "@/lib/media";
 import { BoxIcon } from "./icons";
 
 /** Product photo on a white square, or a calm placeholder when there's no photo yet. */

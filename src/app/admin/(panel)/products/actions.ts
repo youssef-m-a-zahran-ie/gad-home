@@ -6,7 +6,8 @@ import { assertAdmin } from "@/lib/admin/guard";
 import { bool, num, str } from "@/lib/admin/form";
 import { fail, friendlyDbError, ok, type ActionState } from "@/lib/admin/state";
 import { slugify } from "@/lib/format";
-import { MEDIA_BUCKET } from "@/lib/supabase/env";
+import { dbError, one, query, tx, type Stmt } from "@/lib/db";
+import { removeFiles } from "@/lib/storage";
 
 function refresh(id?: string) {
   revalidatePath("/admin/products");
@@ -26,7 +27,7 @@ function parseImages(fd: FormData): string[] {
 }
 
 export async function saveProduct(id: string | null, _prev: ActionState, fd: FormData): Promise<ActionState> {
-  const { supabase } = await assertAdmin();
+  const { user } = await assertAdmin();
   const name = str(fd, "name");
   const price = num(fd, "price");
   const compare = num(fd, "compare_at_price");
@@ -57,69 +58,87 @@ export async function saveProduct(id: string | null, _prev: ActionState, fd: For
   const images = parseImages(fd);
 
   let productId = id;
-  if (!productId) {
-    // URL name from the product name; add a short code if it's taken.
-    const base = slugify(name);
-    let slug = base;
-    for (let i = 0; i < 5; i++) {
-      const { data: taken } = await supabase.from("products").select("id").eq("slug", slug).maybeSingle();
-      if (!taken) break;
-      slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
+  let removed: string[] = [];
+  try {
+    if (!productId) {
+      // URL name from the product name; add a short code if it's taken.
+      const base = slugify(name);
+      let slug = base;
+      for (let i = 0; i < 5; i++) {
+        const taken = await one("select 1 from products where slug = $1", [slug]);
+        if (!taken) break;
+        slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
+      }
+      const created = await one<{ id: string }>(
+        `insert into products (name, slug, category_id, price, compare_at_price, cost, sku, description, low_stock_at, is_active, is_best_seller, is_trending, stock)
+         values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0) returning id`,
+        [row.name, slug, row.category_id, row.price, row.compare_at_price, row.cost, row.sku, row.description, row.low_stock_at, row.is_active, row.is_best_seller, row.is_trending],
+      );
+      if (!created) return fail(friendlyDbError(null));
+      productId = created.id;
+    } else {
+      await query(
+        `update products set name = $2, category_id = $3::uuid, price = $4, compare_at_price = $5, cost = $6, sku = $7,
+           description = $8, low_stock_at = $9, is_active = $10, is_best_seller = $11, is_trending = $12
+         where id = $1::uuid`,
+        [productId, row.name, row.category_id, row.price, row.compare_at_price, row.cost, row.sku, row.description, row.low_stock_at, row.is_active, row.is_best_seller, row.is_trending],
+      );
     }
-    const { data, error } = await supabase.from("products").insert({ ...row, slug, stock: 0 }).select("id").single();
-    if (error || !data) return fail(friendlyDbError(error));
-    productId = data.id;
-  } else {
-    const { error } = await supabase.from("products").update(row).eq("id", productId);
-    if (error) return fail(friendlyDbError(error));
+
+    const old = await query<{ path: string }>("select path from product_images where product_id = $1::uuid", [productId]);
+    // Stock goes through the stock log so every change is recorded; photos are replaced in the same transaction.
+    const stmts: Stmt[] = [
+      ["select set_stock($1::uuid, $2::int, $3)", [productId, stock!, id ? "تعديل من صفحة المنتج" : "مخزون أول مرة"]],
+      ["delete from product_images where product_id = $1::uuid", [productId]],
+      ...images.map((path, sort): Stmt => ["insert into product_images (product_id, path, sort) values ($1::uuid, $2, $3)", [productId, path, sort]]),
+    ];
+    await tx(stmts, user.email);
+    removed = old.map((o) => o.path).filter((p) => !images.includes(p));
+  } catch (e) {
+    return fail(friendlyDbError(dbError(e)));
   }
+  await removeFiles(removed);
 
-  // Stock goes through the stock log so every change is recorded.
-  const { error: stockErr } = await supabase.rpc("set_stock", { p_product: productId, p_stock: stock!, p_note: id ? "تعديل من صفحة المنتج" : "مخزون أول مرة" });
-  if (stockErr) return fail(friendlyDbError(stockErr));
-
-  // Photos: replace the list, then delete files no longer used.
-  const { data: old } = await supabase.from("product_images").select("path").eq("product_id", productId);
-  await supabase.from("product_images").delete().eq("product_id", productId);
-  if (images.length) {
-    const { error: imgErr } = await supabase
-      .from("product_images")
-      .insert(images.map((path, sort) => ({ product_id: productId!, path, sort })));
-    if (imgErr) return fail(friendlyDbError(imgErr));
-  }
-  const removed = (old ?? []).map((o) => o.path).filter((p) => !images.includes(p));
-  if (removed.length) await supabase.storage.from(MEDIA_BUCKET).remove(removed);
-
-  refresh(productId);
+  refresh(productId!);
   if (!id) redirect(`/admin/products/${productId}?created=1`);
   return ok("اتحفظ ✓");
 }
 
 export async function deleteProduct(id: string): Promise<ActionState> {
-  const { supabase } = await assertAdmin();
-  const { data: imgs } = await supabase.from("product_images").select("path").eq("product_id", id);
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) return fail(friendlyDbError(error));
-  const paths = (imgs ?? []).map((i) => i.path);
-  if (paths.length) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+  await assertAdmin();
+  try {
+    const imgs = await query<{ path: string }>("select path from product_images where product_id = $1::uuid", [id]);
+    await query("delete from products where id = $1::uuid", [id]);
+    await removeFiles(imgs.map((i) => i.path));
+  } catch (e) {
+    return fail(friendlyDbError(dbError(e)));
+  }
   refresh();
   redirect("/admin/products?deleted=1");
 }
 
 export async function toggleProductActive(id: string, active: boolean): Promise<ActionState> {
-  const { supabase } = await assertAdmin();
-  const { error } = await supabase.from("products").update({ is_active: active }).eq("id", id);
-  if (error) return fail(friendlyDbError(error));
+  await assertAdmin();
+  try {
+    await query("update products set is_active = $2 where id = $1::uuid", [id, active]);
+  } catch (e) {
+    return fail(friendlyDbError(dbError(e)));
+  }
   refresh(id);
   return ok(active ? "المنتج ظاهر في الموقع." : "المنتج اتخفى من الموقع.");
 }
 
 /** Removes the sample products (code DEMO-…) and sample banners that came with the new store. */
 export async function clearDemoData(): Promise<ActionState> {
-  const { supabase } = await assertAdmin();
-  const { error } = await supabase.from("products").delete().like("sku", "DEMO-%");
-  if (error) return fail(friendlyDbError(error));
-  await supabase.from("banners").delete().like("image_path", "/placeholders/%");
+  await assertAdmin();
+  try {
+    await tx([
+      ["delete from products where sku like 'DEMO-%'"],
+      ["delete from banners where image_path like '/placeholders/%'"],
+    ]);
+  } catch (e) {
+    return fail(friendlyDbError(dbError(e)));
+  }
   refresh();
   revalidatePath("/admin/settings");
   return ok("المنتجات والبانرات التجريبية اتمسحت ✓");

@@ -1,18 +1,11 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { MOCK } from "@/lib/supabase/mock";
+import { currentAdminEmail } from "./session";
 
-/** Returns the signed-in admin and a Supabase client, or null. */
+/** Returns the signed-in admin, or null. */
 export async function getAdmin() {
-  const supabase = await createClient();
-  if (MOCK) return { supabase, user: { email: "admin@example.com" } };
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
-  if (!user) return null;
-  const { data: isAdmin } = await supabase.rpc("is_admin");
-  if (!isAdmin) return null;
-  return { supabase, user: { email: user.email ?? "" } };
+  const email = await currentAdminEmail();
+  return email ? { user: { email } } : null;
 }
 
 /** For pages and layouts: sends anyone who isn't an admin to the login page. */

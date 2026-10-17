@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ActionForm, Field, Notice, SubmitButton, Toggle } from "@/components/admin/form-bits";
 import { ImagePicker } from "@/components/admin/image-picker";
 import type { ActionState } from "@/lib/admin/state";
-import type { CategoryRow } from "@/lib/supabase/database.types";
+import type { CategoryRow } from "@/lib/types";
 import { deleteCategory, saveCategory } from "./actions";
 
 type Cat = Pick<CategoryRow, "id" | "name" | "parent_id" | "image_path" | "sort" | "is_active" | "show_on_home" | "slug">;

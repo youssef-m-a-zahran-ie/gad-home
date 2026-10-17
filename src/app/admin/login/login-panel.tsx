@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ActionForm, Field, SubmitButton } from "@/components/admin/form-bits";
-import { createAdminAccount, sendPasswordReset, signIn } from "./actions";
+import { createAdminAccount, signIn } from "./actions";
 
 type Mode = "signin" | "setup" | "reset";
 
@@ -45,6 +45,9 @@ export function LoginPanel({ notice }: { notice: string | null }) {
               <Field label="اكتب الباسورد تاني" htmlFor="s-confirm" error={s?.errors?.confirm}>
                 <input id="s-confirm" className="input" type="password" name="confirm" autoComplete="new-password" dir="ltr" required />
               </Field>
+              <Field label="كود الإعداد" htmlFor="s-code" hint="الكود اللي صاحب المتجر حاطه للإعداد" error={s?.errors?.code}>
+                <input id="s-code" className="input" type="password" name="code" dir="ltr" autoComplete="off" required />
+              </Field>
               <SubmitButton pending="بيتعمل…">اعمل الحساب</SubmitButton>
             </>
           )}
@@ -52,16 +55,9 @@ export function LoginPanel({ notice }: { notice: string | null }) {
       )}
 
       {mode === "reset" && (
-        <ActionForm action={sendPasswordReset} className="grid gap-4">
-          {(s) => (
-            <>
-              <Field label="إيميل الأدمن" htmlFor="r-email" error={s?.errors?.email}>
-                <input id="r-email" className="input" type="email" name="email" autoComplete="email" dir="ltr" required />
-              </Field>
-              <SubmitButton pending="بيتبعت…">ابعت لينك تغيير الباسورد</SubmitButton>
-            </>
-          )}
-        </ActionForm>
+        <p className="text-[17px] leading-8 text-muted">
+          لو نسيت الباسورد، اطلب من أدمن تاني يفتح «الإعدادات» ويشيلك ويضيفك من جديد بباسورد جديد.
+        </p>
       )}
 
       <div className="flex flex-wrap justify-between gap-2 border-t border-line pt-4 text-[17px]">

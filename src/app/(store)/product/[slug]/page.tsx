@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { discountPct, egp, waLink } from "@/lib/format";
-import { mediaUrl } from "@/lib/supabase/env";
+import { mediaUrl } from "@/lib/media";
 import { getCategories, getProduct, getSettings, listProducts } from "@/store/data";
 import { Gallery } from "@/store/components/gallery";
 import { Price } from "@/store/components/price";

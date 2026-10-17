@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { egp, num } from "@/lib/format";
-import type { GovernorateRow } from "@/lib/supabase/database.types";
+import type { GovernorateRow } from "@/lib/types";
 import { placeOrder } from "../actions";
 import { useCart } from "../cart";
 import { useCartSync } from "../use-cart-sync";

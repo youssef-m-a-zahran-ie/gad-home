@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { MEDIA_BUCKET, mediaUrl } from "@/lib/supabase/env";
+import { mediaUrl } from "@/lib/media";
+import { uploadImageAction } from "@/app/admin/upload";
 
 const MAX_SIDE = 1600;
 
@@ -28,13 +28,12 @@ export async function toWebp(file: File): Promise<Blob> {
 
 export async function uploadImage(file: File, folder: string): Promise<string> {
   const blob = await toWebp(file);
-  const path = `${folder}/${crypto.randomUUID()}.webp`;
-  const { error } = await createClient().storage.from(MEDIA_BUCKET).upload(path, blob, {
-    contentType: "image/webp",
-    cacheControl: "31536000",
-  });
-  if (error) throw error;
-  return path;
+  const fd = new FormData();
+  fd.set("file", new File([blob], "image.webp", { type: "image/webp" }));
+  fd.set("folder", folder);
+  const res = await uploadImageAction(fd);
+  if (!res.ok) throw new Error(res.message);
+  return res.path;
 }
 
 /**

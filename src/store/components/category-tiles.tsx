@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { mediaUrl } from "@/lib/supabase/env";
+import { mediaUrl } from "@/lib/media";
 import type { Category } from "../data";
 import { BoxIcon } from "./icons";
 

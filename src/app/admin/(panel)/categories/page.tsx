@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/admin/guard";
-import type { CategoryRow } from "@/lib/supabase/database.types";
+import { query } from "@/lib/db";
+import type { CategoryRow } from "@/lib/types";
 import { Empty, PageHead } from "@/components/admin/ui";
 import { CategoryForm, CategoryRowItem } from "./category-form";
 
 export const metadata: Metadata = { title: "الأقسام" };
 
 export default async function CategoriesPage() {
-  const { supabase } = await requireAdmin();
-  const [{ data }, { data: prods }] = await Promise.all([
-    supabase.from("categories").select("id, name, slug, parent_id, image_path, sort, is_active, show_on_home").order("sort").order("name"),
-    supabase.from("products").select("category_id").limit(5000),
-  ]);
-  const cats = (data ?? []) as Pick<CategoryRow, "id" | "name" | "slug" | "parent_id" | "image_path" | "sort" | "is_active" | "show_on_home">[];
+  await requireAdmin();
+  const cats = await query<Pick<CategoryRow, "id" | "name" | "slug" | "parent_id" | "image_path" | "sort" | "is_active" | "show_on_home">>(
+    "select id, name, slug, parent_id, image_path, sort, is_active, show_on_home from categories order by sort, name",
+  );
+  const prods = await query<{ category_id: string; n: number }>(
+    "select category_id, count(*)::int as n from products where category_id is not null group by category_id",
+  );
   const tops = cats.filter((c) => !c.parent_id);
   const counts = new Map<string, number>();
-  for (const p of prods ?? []) if (p.category_id) counts.set(p.category_id, (counts.get(p.category_id) ?? 0) + 1);
+  for (const p of prods) counts.set(p.category_id, p.n);
 
   return (
     <>

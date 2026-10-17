@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { ActionForm, Field, Notice, SubmitButton, Toggle } from "@/components/admin/form-bits";
 import { ImagePicker } from "@/components/admin/image-picker";
 import type { ActionState } from "@/lib/admin/state";
-import { mediaUrl } from "@/lib/supabase/env";
-import type { BannerRow, SettingsRow } from "@/lib/supabase/database.types";
+import { mediaUrl } from "@/lib/media";
+import type { BannerRow, SettingsRow } from "@/lib/types";
 import { addAdmin, addBanner, changePassword, deleteBanner, removeAdmin, saveSettings, updateBanner } from "./actions";
 
 export function SettingsForm({ s }: { s: SettingsRow }) {
@@ -148,14 +148,18 @@ export function Admins({ emails, me }: { emails: string[]; me: string }) {
         ))}
       </ul>
       <Notice state={state} />
-      <ActionForm action={addAdmin} className="grid gap-2" resetOnSuccess onSuccess={() => router.refresh()}>
+      <ActionForm action={addAdmin} className="grid gap-3 sm:max-w-md" resetOnSuccess onSuccess={() => router.refresh()}>
         {(s) => (
-          <Field label="ضيف إيميل أدمن جديد" htmlFor="new-admin" error={s?.errors?.email}>
-            <div className="flex gap-2">
-              <input id="new-admin" name="email" type="email" className="input" dir="ltr" />
-              <SubmitButton className="btn btn-navy shrink-0">ضيف</SubmitButton>
-            </div>
-          </Field>
+          <>
+            <Field label="ضيف إيميل أدمن جديد" htmlFor="new-admin" error={s?.errors?.email}>
+              <input id="new-admin" name="email" type="email" className="input" dir="ltr" autoComplete="off" />
+            </Field>
+            <Field label="باسورد مؤقت ليه" htmlFor="new-admin-pass" hint="٨ حروف أو أرقام على الأقل. هو يغيره بعد ما يدخل." error={s?.errors?.password}>
+              <input id="new-admin-pass" name="password" type="text" className="input" dir="ltr" autoComplete="off" />
+            </Field>
+            <SubmitButton className="btn btn-navy w-fit">ضيف</SubmitButton>
+            <Notice state={s} />
+          </>
         )}
       </ActionForm>
     </section>

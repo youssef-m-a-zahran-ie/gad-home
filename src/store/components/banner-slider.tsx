@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { mediaUrl } from "@/lib/supabase/env";
-import type { BannerRow } from "@/lib/supabase/database.types";
+import { mediaUrl } from "@/lib/media";
+import type { BannerRow } from "@/lib/types";
 import { ChevronLeft, ChevronRight } from "./icons";
 
 /** Banners side by side; the shopper moves them with the arrows or a swipe. No autoplay. */

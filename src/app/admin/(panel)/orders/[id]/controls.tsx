@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ActionForm, Notice, SubmitButton } from "@/components/admin/form-bits";
 import { STATUS } from "@/components/admin/ui";
 import type { ActionState } from "@/lib/admin/state";
-import type { OrderRow, OrderStatus } from "@/lib/supabase/database.types";
+import type { OrderRow, OrderStatus } from "@/lib/types";
 import { saveOrderCustomer, saveOrderNote, setOrderPaid, setOrderStatus } from "../actions";
 
 const FLOW: OrderStatus[] = ["new", "confirmed", "shipped", "delivered"];

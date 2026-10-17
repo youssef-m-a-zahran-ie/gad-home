@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { query } from "@/lib/db";
 import { dateTime, egp } from "@/lib/format";
-import type { OrderRow, OrderStatus } from "@/lib/supabase/database.types";
+import type { OrderRow, OrderStatus } from "@/lib/types";
 import { Empty, PageHead, STATUS, StatusBadge } from "@/components/admin/ui";
 
 export const metadata: Metadata = { title: "الطلبات" };
@@ -19,31 +20,36 @@ const TABS: { key: OrderStatus | "all"; label: string }[] = [
 const PER_PAGE = 50;
 
 export default async function OrdersPage({ searchParams }: PageProps<"/admin/orders">) {
-  const { supabase } = await requireAdmin();
+  await requireAdmin();
   const sp = await searchParams;
   const status = (typeof sp.status === "string" ? sp.status : "all") as OrderStatus | "all";
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const page = Math.max(1, Number(sp.page) || 1);
 
-  let query = supabase
-    .from("orders")
-    .select("id, number, status, customer_name, phone, governorate, city, total, payment_method, paid, created_at, order_items(qty)", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range((page - 1) * PER_PAGE, page * PER_PAGE - 1);
-  if (status !== "all") query = query.eq("status", status);
+  const where: string[] = [];
+  const args: unknown[] = [];
+  const arg = (v: unknown) => `$${args.push(v)}`;
+  if (status !== "all") where.push(`o.status = ${arg(status)}::order_status`);
   if (q) {
     const digits = q.replace(/[^0-9]/g, "");
-    const clean = q.replace(/[%_,()*]/g, " ");
-    query = /^\d{1,7}$/.test(q)
-      ? query.eq("number", Number(q))
-      : digits.length >= 6
-        ? query.ilike("phone", `%${digits}%`)
-        : query.ilike("customer_name", `%${clean}%`);
+    const clean = q.replace(/[%_\\]/g, " ");
+    where.push(
+      /^\d{1,7}$/.test(q)
+        ? `o.number = ${arg(Number(q))}`
+        : digits.length >= 6
+          ? `o.phone ilike ${arg(`%${digits}%`)}`
+          : `o.customer_name ilike ${arg(`%${clean}%`)}`,
+    );
   }
-  const { data, count } = await query;
-  const orders = (data ?? []) as unknown as (Pick<OrderRow, "id" | "number" | "status" | "customer_name" | "phone" | "governorate" | "city" | "total" | "payment_method" | "paid" | "created_at"> & {
-    order_items: { qty: number }[];
-  })[];
+  const w = where.length ? `where ${where.join(" and ")}` : "";
+  type OrderListRow = Pick<OrderRow, "id" | "number" | "status" | "customer_name" | "phone" | "governorate" | "city" | "total" | "payment_method" | "paid" | "created_at"> & { qty: number };
+  const orders = await query<OrderListRow>(
+    `select o.id, o.number, o.status, o.customer_name, o.phone, o.governorate, o.city, o.total, o.payment_method, o.paid, o.created_at,
+       coalesce((select sum(i.qty) from order_items i where i.order_id = o.id), 0)::int as qty
+     from orders o ${w} order by o.created_at desc limit ${PER_PAGE} offset ${(page - 1) * PER_PAGE}`,
+    args,
+  );
+  const [{ n: count }] = await query<{ n: number }>(`select count(*)::int as n from orders o ${w}`, args);
   const pages = Math.ceil((count ?? 0) / PER_PAGE);
   const qs = (extra: Record<string, string | number>) => {
     const p = new URLSearchParams();
@@ -92,7 +98,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
                     {o.customer_name} <span className="font-normal text-muted" dir="ltr">{o.phone}</span>
                   </p>
                   <p className="text-[16px] text-muted">
-                    {o.governorate}، {o.city} • {o.order_items.reduce((s, i) => s + i.qty, 0)} قطعة • {dateTime(o.created_at)}
+                    {o.governorate}، {o.city} • {o.qty} قطعة • {dateTime(o.created_at)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:grid sm:justify-items-end sm:gap-1">

@@ -1,43 +1,17 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Keeps the admin session fresh: refreshes the Supabase token and writes the new cookies.
-// Only runs on /admin, so shoppers never pay for it.
-export async function proxy(request: NextRequest) {
-  if (process.env.GAD_MOCK === "1") return NextResponse.next({ request });
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet, headers) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-          Object.entries(headers ?? {}).forEach(([key, value]) => response.headers.set(key, value));
-        },
-      },
-    },
-  );
-
-  const { data } = await supabase.auth.getClaims();
-  const signedIn = Boolean(data?.claims);
+// Cheap gate for /admin: no session cookie → login page. The real check (is the session valid and
+// is the email still an admin?) happens in requireAdmin()/assertAdmin() against the database.
+export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const isPublicAdminPath = path.startsWith("/admin/login") || path.startsWith("/admin/auth");
-
-  if (!signedIn && !isPublicAdminPath) {
+  if (path.startsWith("/admin/login")) return NextResponse.next();
+  if (!request.cookies.get("gad_admin")?.value) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     url.search = "";
     return NextResponse.redirect(url);
   }
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

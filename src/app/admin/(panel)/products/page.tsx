@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { isUuid, one, query } from "@/lib/db";
 import { egp, num } from "@/lib/format";
-import type { CategoryRow, ProductRow } from "@/lib/supabase/database.types";
+import type { CategoryRow, ProductRow } from "@/lib/types";
 import { Empty, PageHead } from "@/components/admin/ui";
 import { ProductImage } from "@/store/components/product-image";
 import { categoryOptions } from "./options";
@@ -11,30 +12,32 @@ import { ClearDemo } from "./clear-demo";
 export const metadata: Metadata = { title: "المنتجات" };
 
 export default async function ProductsPage({ searchParams }: PageProps<"/admin/products">) {
-  const { supabase } = await requireAdmin();
+  await requireAdmin();
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const cat = typeof sp.cat === "string" ? sp.cat : "";
 
-  let query = supabase
-    .from("products")
-    .select("id, name, slug, price, compare_at_price, stock, low_stock_at, is_active, is_best_seller, is_trending, category_id, product_images(path, sort)")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const where: string[] = [];
+  const args: unknown[] = [];
+  const arg = (v: unknown) => `$${args.push(v)}`;
   if (q) {
-    const t = q.replace(/[%_,()*]/g, " ");
-    query = query.or(`name.ilike.%${t}%,sku.ilike.%${t}%`);
+    const t = arg(`%${q.replace(/[%_\\]/g, " ")}%`);
+    where.push(`(p.name ilike ${t} or p.sku ilike ${t})`);
   }
-  if (cat === "none") query = query.is("category_id", null);
-  else if (cat) query = query.eq("category_id", cat);
+  if (cat === "none") where.push("p.category_id is null");
+  else if (cat && isUuid(cat)) where.push(`p.category_id = ${arg(cat)}::uuid`);
 
-  const [{ data }, { data: catsData }, { count: demoCount }] = await Promise.all([
-    query,
-    supabase.from("categories").select("id, name, parent_id").order("sort").order("name"),
-    supabase.from("products").select("id", { count: "exact", head: true }).like("sku", "DEMO-%"),
+  const [products, cats, demo] = await Promise.all([
+    query<ProductRow & { images: string[] }>(
+      `select p.id, p.name, p.slug, p.price, p.compare_at_price, p.stock, p.low_stock_at, p.is_active, p.is_best_seller, p.is_trending, p.category_id,
+         coalesce((select array_agg(i.path order by i.sort) from product_images i where i.product_id = p.id), '{}') as images
+       from products p ${where.length ? `where ${where.join(" and ")}` : ""} order by p.created_at desc limit 500`,
+      args,
+    ),
+    query<Pick<CategoryRow, "id" | "name" | "parent_id">>("select id, name, parent_id from categories order by sort, name"),
+    one<{ n: number }>("select count(*)::int as n from products where sku like 'DEMO-%'"),
   ]);
-  const cats = (catsData ?? []) as Pick<CategoryRow, "id" | "name" | "parent_id">[];
-  const products = (data ?? []) as unknown as (ProductRow & { product_images: { path: string; sort: number }[] })[];
+  const demoCount = demo?.n ?? 0;
 
   return (
     <>
@@ -43,7 +46,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         sub={`${num(products.length)} منتج`}
         actions={<Link href="/admin/products/new" className="btn btn-primary">+ أضف منتج</Link>}
       />
-      {(demoCount ?? 0) > 0 && <ClearDemo count={demoCount ?? 0} />}
+      {demoCount > 0 && <ClearDemo count={demoCount} />}
       {sp.deleted && <p className="mb-4 rounded-xl bg-ok-bg px-4 py-3 text-[18px] font-bold text-ok">المنتج اتمسح.</p>}
       <form className="mb-5 grid gap-2 sm:grid-cols-[1fr_260px_auto]" action="/admin/products">
         <input name="q" defaultValue={q} className="input" placeholder="ابحث باسم المنتج أو الكود" />
@@ -62,7 +65,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       ) : (
         <ul className="grid gap-3">
           {products.map((p) => {
-            const img = [...p.product_images].sort((a, b) => a.sort - b.sort)[0]?.path;
+            const img = p.images[0];
             const catName = cats.find((c) => c.id === p.category_id)?.name;
             return (
               <li key={p.id}>

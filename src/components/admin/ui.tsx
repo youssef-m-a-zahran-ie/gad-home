@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { OrderStatus } from "@/lib/supabase/database.types";
+import type { OrderStatus } from "@/lib/types";
 
 export function PageHead({ title, sub, actions }: { title: string; sub?: ReactNode; actions?: ReactNode }) {
   return (

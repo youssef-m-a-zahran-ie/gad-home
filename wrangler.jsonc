@@ -15,8 +15,10 @@
 		}
 	],
 	"vars": {
-		"NEXT_PUBLIC_SUPABASE_URL": "https://ocsqswnttstxhhmidntj.supabase.co",
-		"NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable__GbM_j8a5hZZjFA8Vvpsfg_3m-j5YC1",
-		"NEXT_PUBLIC_SITE_URL": "https://gad-home.youssef-m-a-zahran.workers.dev"
+		"NEXT_PUBLIC_SITE_URL": "https://gad-home.youssef-m-a-zahran.workers.dev",
+		"NEXT_PUBLIC_MEDIA_BASE_URL": "https://br-aged-mode-ba4mu3qe.storage.c-8.eu-central-1.aws.neon.tech/media",
+		"NEXT_PUBLIC_LEGACY_MEDIA_BASE_URL": "https://ocsqswnttstxhhmidntj.supabase.co/storage/v1/object/public/media",
+		"STORAGE_ENDPOINT": "https://br-aged-mode-ba4mu3qe.storage.c-8.eu-central-1.aws.neon.tech",
+		"STORAGE_REGION": "eu-central-1"
 	}
 }

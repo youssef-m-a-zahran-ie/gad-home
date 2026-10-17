@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
+import { isUuid, one, query } from "@/lib/db";
 import { dateTime, egp, num, waLink } from "@/lib/format";
-import type { OrderItemRow, OrderRow } from "@/lib/supabase/database.types";
+import type { OrderItemRow, OrderRow } from "@/lib/types";
 import { Card, StatusBadge } from "@/components/admin/ui";
 import { ProductImage } from "@/store/components/product-image";
 import { CustomerForm, NoteForm, PaidToggle, PrintButton, StatusControl } from "./controls";
@@ -12,15 +13,13 @@ export const metadata: Metadata = { title: "تفاصيل الطلب" };
 
 export default async function OrderPage({ params }: PageProps<"/admin/orders/[id]">) {
   const { id } = await params;
-  const { supabase } = await requireAdmin();
-  const { data } = await supabase.from("orders").select("*, order_items(*)").eq("id", id).maybeSingle();
-  if (!data) notFound();
-  const o = data as unknown as OrderRow & { order_items: OrderItemRow[] };
-  const { count: prior } = await supabase
-    .from("orders")
-    .select("id", { count: "exact", head: true })
-    .eq("phone", o.phone)
-    .neq("id", o.id);
+  await requireAdmin();
+  if (!isUuid(id)) notFound();
+  const order = await one<OrderRow>("select * from orders where id = $1::uuid", [id]);
+  if (!order) notFound();
+  const items = await query<OrderItemRow>("select * from order_items where order_id = $1::uuid order by id", [id]);
+  const o = { ...order, order_items: items };
+  const prior = (await one<{ n: number }>("select count(*)::int as n from orders where phone = $1 and id <> $2::uuid", [o.phone, o.id]))?.n ?? 0;
   const wa = waLink(o.phone, `أهلاً ${o.customer_name}، معاك GAD Home بخصوص طلبك رقم ${o.number} بإجمالي ${o.total} جنيه.`);
   const profit = o.order_items.every((i) => i.cost != null)
     ? o.order_items.reduce((s, i) => s + (Number(i.price) - Number(i.cost)) * i.qty, 0)
@@ -83,7 +82,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             <div className="grid gap-2 text-[18px]">
               <p className="text-[20px] font-bold">{o.customer_name}</p>
               <p dir="ltr" className="text-end font-bold">{o.phone}{o.phone2 ? ` / ${o.phone2}` : ""}</p>
-              {(prior ?? 0) > 0 && <p className="text-[16px] text-ok">عميل قديم: عمل {prior} طلب قبل كده</p>}
+              {prior > 0 && <p className="text-[16px] text-ok">عميل قديم: عمل {prior} طلب قبل كده</p>}
               <div className="no-print grid grid-cols-2 gap-2 pt-1">
                 <a href={`tel:${o.phone}`} className="btn btn-outline btn-sm">اتصال</a>
                 {wa && <a href={wa} target="_blank" rel="noopener" className="btn btn-whatsapp btn-sm">واتساب</a>}

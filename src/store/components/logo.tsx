@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { mediaUrl } from "@/lib/supabase/env";
+import { mediaUrl } from "@/lib/media";
 
 export function Logo({ name, logoPath, light = false }: { name: string; logoPath?: string | null; light?: boolean }) {
   const src = mediaUrl(logoPath);
