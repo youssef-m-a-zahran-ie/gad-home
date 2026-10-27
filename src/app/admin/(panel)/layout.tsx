@@ -10,13 +10,16 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     <div className="min-h-screen lg:grid lg:grid-cols-[250px_1fr]">
       <aside className="no-print border-b border-line bg-white px-4 py-3 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-l lg:py-6">
         <div className="mb-3 flex items-center justify-between gap-2 lg:mb-6 lg:block">
-          <Link href="/admin" className="text-[24px] font-extrabold text-navy" dir="ltr">
+          <Link href="/admin" className="text-[20px] font-bold text-navy lg:text-[22px]" dir="ltr">
             GAD Home
           </Link>
           <div className="flex items-center gap-2 lg:mt-2">
-            <Link href="/" target="_blank" className="text-[16px] font-bold text-blue hover:underline">
+            <Link href="/" target="_blank" className="text-[14px] font-bold text-blue hover:underline lg:text-[15px]">
               شوف الموقع ↗
             </Link>
+            <form action={signOut} className="lg:hidden">
+              <button type="submit" className="min-h-10 rounded-lg px-2 text-[14px] font-bold text-sale hover:bg-soft">خروج</button>
+            </form>
           </div>
         </div>
         <AdminNav newOrders={count ?? 0} />

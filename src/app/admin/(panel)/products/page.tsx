@@ -9,18 +9,21 @@ import { categoryOptions } from "./options";
 import { ClearDemo } from "./clear-demo";
 
 export const metadata: Metadata = { title: "المنتجات" };
+const PER_PAGE = 50;
 
 export default async function ProductsPage({ searchParams }: PageProps<"/admin/products">) {
   const { supabase } = await requireAdmin();
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const cat = typeof sp.cat === "string" ? sp.cat : "";
+  const requestedPage = Number(sp.page);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   let query = supabase
     .from("products")
-    .select("id, name, slug, price, compare_at_price, stock, low_stock_at, is_active, is_best_seller, is_trending, category_id, product_images(path, sort)")
+    .select("id, name, slug, price, compare_at_price, stock, low_stock_at, is_active, is_best_seller, is_trending, category_id, product_images(path, sort)", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(500);
+    .range((page - 1) * PER_PAGE, page * PER_PAGE - 1);
   if (q) {
     const t = q.replace(/[%_,()*]/g, " ");
     query = query.or(`name.ilike.%${t}%,sku.ilike.%${t}%`);
@@ -28,19 +31,27 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   if (cat === "none") query = query.is("category_id", null);
   else if (cat) query = query.eq("category_id", cat);
 
-  const [{ data }, { data: catsData }, { count: demoCount }] = await Promise.all([
+  const [{ data, count }, { data: catsData }, { count: demoCount }] = await Promise.all([
     query,
     supabase.from("categories").select("id, name, parent_id").order("sort").order("name"),
     supabase.from("products").select("id", { count: "exact", head: true }).like("sku", "DEMO-%"),
   ]);
   const cats = (catsData ?? []) as Pick<CategoryRow, "id" | "name" | "parent_id">[];
   const products = (data ?? []) as unknown as (ProductRow & { product_images: { path: string; sort: number }[] })[];
+  const pages = Math.ceil((count ?? 0) / PER_PAGE);
+  const pageHref = (nextPage: number) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (cat) params.set("cat", cat);
+    params.set("page", String(nextPage));
+    return `/admin/products?${params.toString()}`;
+  };
 
   return (
     <>
       <PageHead
         title="المنتجات"
-        sub={`${num(products.length)} منتج`}
+        sub={`${num(count ?? 0)} منتج`}
         actions={<Link href="/admin/products/new" className="btn btn-primary">+ أضف منتج</Link>}
       />
       {(demoCount ?? 0) > 0 && <ClearDemo count={demoCount ?? 0} />}
@@ -58,7 +69,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       </form>
 
       {products.length === 0 ? (
-        <Empty text={q || cat ? "مفيش منتجات بالبحث ده." : "لسه مفيش منتجات."} href="/admin/products/new" cta="+ أضف أول منتج" />
+        <Empty text={page > 1 ? "مفيش منتجات في الصفحة دي." : q || cat ? "مفيش منتجات بالبحث ده." : "لسه مفيش منتجات."} href={page === 1 ? "/admin/products/new" : undefined} cta={page === 1 ? "+ أضف أول منتج" : undefined} />
       ) : (
         <ul className="grid gap-3">
           {products.map((p) => {
@@ -89,6 +100,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             );
           })}
         </ul>
+      )}
+      {pages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-3">
+          {page > 1 && <Link className="btn btn-outline btn-sm" href={pageHref(page - 1)}>السابق</Link>}
+          <span className="text-[15px] text-muted">صفحة {page} من {pages}</span>
+          {page < pages && <Link className="btn btn-outline btn-sm" href={pageHref(page + 1)}>التالي</Link>}
+        </div>
       )}
     </>
   );

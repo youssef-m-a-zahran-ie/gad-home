@@ -18,7 +18,7 @@ export function SearchBox({ defaultValue = "", className = "" }: { defaultValue?
         type="search"
         defaultValue={defaultValue}
         placeholder="اكتب اسم المنتج اللي بتدوّر عليه"
-        className="min-h-[52px] w-full min-w-0 rounded-full bg-transparent ps-5 text-[18px] placeholder:text-muted focus:outline-none"
+        className="min-h-[50px] w-full min-w-0 rounded-full bg-transparent ps-5 text-[17px] placeholder:text-muted focus:outline-none"
         enterKeyHint="search"
       />
       <button

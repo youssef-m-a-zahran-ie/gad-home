@@ -23,15 +23,15 @@ export default async function Dashboard() {
   const { supabase } = await requireAdmin();
   const monthStart = cairoStart(0, true);
   const todayStart = cairoStart(0);
-  const [{ data: monthOrders }, { data: latest }, { data: prods }] = await Promise.all([
+  const [{ data: monthOrders }, { data: latest }, { data: prods }, { count: newCount }] = await Promise.all([
     supabase.from("orders").select("total, status, created_at").gte("created_at", monthStart).limit(5000),
     supabase.from("orders").select("id, number, status, customer_name, total, created_at, governorate").order("created_at", { ascending: false }).limit(8),
     supabase.from("products").select("id, name, stock, low_stock_at, is_active").eq("is_active", true).order("stock").limit(1000),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "new"),
   ]);
   const live = (monthOrders ?? []).filter((o) => o.status !== "cancelled");
   const today = live.filter((o) => o.created_at >= todayStart);
   const sum = (a: { total: number }[]) => a.reduce((s, o) => s + Number(o.total), 0);
-  const newCount = (monthOrders ?? []).filter((o) => o.status === "new").length;
   const low = (prods ?? []).filter((p) => p.stock <= p.low_stock_at);
 
   return (
@@ -103,7 +103,7 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
   return (
     <div className={`card p-4 ${tone === "blue" ? "border-2 border-blue bg-sky" : tone === "warn" ? "border-2 border-warn bg-warn-bg" : ""}`}>
       <p className="text-[15px] font-bold text-muted">{label}</p>
-      <p className="text-[30px] leading-tight font-extrabold text-navy">{value}</p>
+      <p className="text-[26px] leading-tight font-bold text-navy">{value}</p>
       {sub && <p className="text-[16px] font-bold text-ink">{sub}</p>}
     </div>
   );

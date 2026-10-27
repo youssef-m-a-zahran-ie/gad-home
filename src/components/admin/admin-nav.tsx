@@ -17,7 +17,7 @@ export function AdminNav({ newOrders }: { newOrders: number }) {
   const pathname = usePathname();
   return (
     <nav aria-label="أقسام لوحة التحكم" >
-      <ul className="flex flex-wrap gap-1.5 lg:flex-col lg:gap-1">
+      <ul className="flex flex-wrap gap-1 lg:flex-col lg:gap-1">
         {LINKS.map((l) => {
           const active = l.href === "/admin" ? pathname === "/admin" : pathname.startsWith(l.href);
           return (
@@ -25,7 +25,7 @@ export function AdminNav({ newOrders }: { newOrders: number }) {
               <Link
                 href={l.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-[44px] items-center justify-between gap-2 rounded-xl px-3 text-[16px] font-bold lg:min-h-[50px] lg:px-4 lg:text-[18px] ${
+                className={`flex min-h-10 items-center justify-between gap-2 rounded-lg px-2.5 text-[15px] font-bold lg:min-h-[48px] lg:rounded-xl lg:px-4 lg:text-[16px] ${
                   active ? "bg-navy text-white" : "bg-sky text-navy hover:bg-sky-2 lg:bg-transparent"
                 }`}
               >
