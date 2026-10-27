@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
-/* GAD Home: blue theme, big readable type, nothing that moves. */
+/* GAD Home: calm homeware palette, readable type, and clear controls. */
 :root {
-  --navy: #0b3a6e;
-  --navy-2: #072a52;
-  --blue: #1565c0;
-  --blue-hover: #0f4f99;
-  --sky: #e8f2fc;
-  --sky-2: #cfe4f8;
-  --page: #ffffff;
-  --soft: #f4f8fc;
-  --ink: #0f1e33;
-  --muted: #4a5b70;
-  --line: #d6e2ef;
-  --sale: #d32f2f;
-  --ok: #15803d;
-  --ok-bg: #e7f6ec;
-  --warn: #b45309;
-  --warn-bg: #fff4e0;
+  --navy: #203a43;
+  --navy-2: #172d35;
+  --blue: #356773;
+  --blue-hover: #2b5862;
+  --sky: #edf3f2;
+  --sky-2: #dce8e5;
+  --page: #fffefa;
+  --soft: #f6f5f0;
+  --ink: #202a2e;
+  --muted: #536168;
+  --line: #dfe4e1;
+  --sale: #b4443d;
+  --ok: #28664e;
+  --ok-bg: #eaf2ec;
+  --warn: #865516;
+  --warn-bg: #f6f0e3;
 }
 
 @theme inline {
@@ -37,7 +37,7 @@
   --color-ok-bg: var(--ok-bg);
   --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
-  --font-sans: "Noto Naskh Arabic Variable", "Noto Serif Variable", "Segoe UI", Tahoma, serif;
+  --font-sans: "Noto Sans Arabic Variable", "Noto Serif Variable", "Segoe UI", Tahoma, sans-serif;
 }
 
 html {
@@ -50,7 +50,7 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 18px;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 @layer base {
@@ -92,7 +92,7 @@ body {
     gap: 10px;
     min-height: 54px;
     padding: 10px 22px;
-    border-radius: 14px;
+    border-radius: 12px;
     font-weight: 700;
     font-size: 19px;
     line-height: 1.3;
@@ -130,7 +130,7 @@ body {
   .input-error { border-color: var(--sale); }
   .field-error { color: var(--sale); font-weight: 700; font-size: 16px; margin-top: 4px; }
 
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 18px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; }
 
   .badge {
     display: inline-flex;
@@ -145,6 +145,12 @@ body {
 
   .no-scrollbar { scrollbar-width: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 767px) {
+  body { line-height: 1.72; }
+  .container-page { padding-inline: 14px; }
+  .btn { min-height: 52px; }
 }
 
 @media print {

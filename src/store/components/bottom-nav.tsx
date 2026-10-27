@@ -30,7 +30,7 @@ export function BottomNav() {
             <li key={href}>
               <Link
                 href={href}
-                className={`relative flex min-h-[64px] flex-col items-center justify-center gap-0.5 text-[15px] font-bold ${active ? "text-blue" : "text-muted"}`}
+                className={`relative flex min-h-[66px] flex-col items-center justify-center gap-0.5 text-[16px] font-bold ${active ? "text-blue" : "text-muted"}`}
                 aria-current={active ? "page" : undefined}
               >
                 <Icon size={26} />

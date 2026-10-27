@@ -39,7 +39,7 @@ export function ProductBuy({ p, waHref }: { p: StoreProductFull; waHref: string 
             </button>
             <button
               type="button"
-              className="btn btn-navy w-full text-[21px]"
+              className="btn btn-outline w-full text-[20px]"
               onClick={() => {
                 add(item, qty);
                 router.push("/checkout");
@@ -52,7 +52,7 @@ export function ProductBuy({ p, waHref }: { p: StoreProductFull; waHref: string 
       )}
 
       {waHref && (
-        <a href={waHref} target="_blank" rel="noopener" className="btn btn-whatsapp w-full">
+        <a href={waHref} target="_blank" rel="noopener" className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl border border-[#c8dbcc] bg-[#f1f6f1] px-4 text-[18px] font-bold text-[#286044] transition-colors hover:bg-[#e7f0e8]">
           <WhatsAppIcon size={26} /> {soldOut ? "اسأل عن المنتج على واتساب" : "عندك سؤال؟ كلمنا واتساب"}
         </a>
       )}

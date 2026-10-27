@@ -11,7 +11,7 @@ export function WhatsAppFloat({ href }: { href: string | null }) {
       href={href}
       target="_blank"
       rel="noopener"
-      className="no-print fixed bottom-[84px] left-4 z-30 grid size-16 place-items-center rounded-full bg-[#1fa855] text-white shadow-lg hover:bg-[#178a45] lg:bottom-6"
+      className={`no-print fixed bottom-[82px] left-3 z-30 grid size-14 place-items-center rounded-full bg-[#25804c] text-white shadow-md transition-colors hover:bg-[#1d683d] lg:bottom-6 lg:left-4 lg:size-16 ${pathname === "/" ? "hidden lg:grid" : ""}`}
       aria-label="كلمنا على واتساب"
     >
       <WhatsAppIcon size={34} />

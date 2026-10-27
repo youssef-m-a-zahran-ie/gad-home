@@ -26,7 +26,7 @@ export async function StoreShell({ children }: { children: ReactNode }) {
       </a>
 
       {settings.announcement && (
-        <div className="bg-navy px-4 py-2 text-center text-[16px] font-bold text-white sm:text-[17px]">{settings.announcement}</div>
+        <div className="overflow-hidden text-ellipsis whitespace-nowrap bg-navy px-3 py-1.5 text-center text-[14px] font-bold leading-tight text-white sm:px-4 sm:py-2 sm:text-[17px]">{settings.announcement}</div>
       )}
 
       <header className="sticky top-0 z-40 border-b border-line bg-white">

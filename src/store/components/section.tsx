@@ -4,7 +4,7 @@ import { ChevronLeft } from "./icons";
 
 export function Section({ title, href, children, tone = "white" }: { title: string; href?: string; children: ReactNode; tone?: "white" | "soft" }) {
   return (
-    <section className={tone === "soft" ? "bg-soft py-8 sm:py-10" : "py-8 sm:py-10"}>
+    <section className={tone === "soft" ? "bg-soft py-6 sm:py-10" : "py-6 sm:py-10"}>
       <div className="container-page">
         <div className="mb-5 flex items-center justify-between gap-3">
           <h2 className="text-[23px] text-ink sm:text-[30px]">{title}</h2>

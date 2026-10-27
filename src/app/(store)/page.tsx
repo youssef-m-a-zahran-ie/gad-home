@@ -28,6 +28,18 @@ function CategoryShelf({ c, products }: { c: Category; products: StoreProduct[] 
   );
 }
 
+/** Keep the top promotional rows useful by avoiding the same item in every row. */
+function uniqueFeaturedGroups(groups: StoreProduct[][]) {
+  const used = new Set<string>();
+  return groups.map((group) =>
+    group.filter((p) => {
+      if (used.has(p.id)) return false;
+      used.add(p.id);
+      return true;
+    }),
+  );
+}
+
 export default async function HomePage() {
   const [settings, banners, cats, offers, best, fresh] = await Promise.all([
     getSettings(),
@@ -42,6 +54,7 @@ export default async function HomePage() {
   const perCat = await Promise.all(
     homeCats.map(async (c) => ({ c, products: await listProducts({ categoryIds: withDescendants(cats, c.id), limit: 7 }) })),
   );
+  const [featuredOffers, featuredBest, featuredFresh] = uniqueFeaturedGroups([offers.slice(0, 8), best, fresh]);
 
   return (
     <div className="-mb-12 bg-soft pb-4">
@@ -77,19 +90,19 @@ export default async function HomePage() {
 
       {offers.length > 0 && (
         <Section title="العروض والخصومات" href="/offers" tone="soft">
-          <HomeGrid products={offers} />
+          <HomeGrid products={featuredOffers} />
         </Section>
       )}
 
-      {best.length > 0 && (
+      {featuredBest.length > 0 && (
         <Section title="الأكثر مبيعاً" href="/best-sellers" tone="soft">
-          <HomeGrid products={best} />
+          <HomeGrid products={featuredBest} />
         </Section>
       )}
 
-      {fresh.length > 0 && (
+      {featuredFresh.length > 0 && (
         <Section title="وصل حديثاً" href="/new" tone="soft">
-          <HomeGrid products={fresh} />
+          <HomeGrid products={featuredFresh} />
         </Section>
       )}
 

@@ -31,27 +31,27 @@ export function CategoryTiles({ cats }: { cats: Category[] }) {
   );
 }
 
-/** Home page strip: round picture with the name under it. All of them show, they wrap onto more rows. */
+/** Home page categories use simple photo cards that stay clear at phone size. */
 export function CategoryStrip({ cats }: { cats: Category[] }) {
   return (
-    <ul className="flex flex-wrap justify-center gap-y-4">
+    <ul className="flex flex-wrap justify-center gap-y-3 sm:gap-y-4">
       {cats.map((c) => {
         const src = mediaUrl(c.image_path);
         return (
           <li key={c.id} className="w-1/3 px-1 sm:w-1/4 md:w-1/6 lg:w-[12.5%]">
             <Link
               href={`/category/${encodeURIComponent(c.slug)}`}
-              className="flex h-full flex-col items-center gap-2 rounded-2xl p-2 text-center hover:bg-soft"
+              className="flex h-full flex-col gap-2 rounded-xl border border-line bg-white p-2 text-center transition-colors hover:border-blue hover:bg-soft"
             >
-              <span className="grid size-[88px] place-items-center overflow-hidden rounded-full bg-sky sm:size-24">
+              <span className="grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-sky">
                 {src ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={src} alt="" loading="lazy" className="size-full object-cover" />
                 ) : (
-                  <BoxIcon size={40} strokeWidth={1.4} className="text-navy/50" />
+                  <BoxIcon size={36} strokeWidth={1.5} className="text-navy/50" />
                 )}
               </span>
-              <span className="text-[17px] leading-snug font-bold text-ink">{c.name}</span>
+              <span className="text-[16px] leading-snug font-bold text-ink sm:text-[17px]">{c.name}</span>
             </Link>
           </li>
         );
